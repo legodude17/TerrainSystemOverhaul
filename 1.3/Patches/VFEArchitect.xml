@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Patch>
+    <Operation Class="PatchOperationFindMod">
+        <mods>
+            <li>Vanilla Furniture Expanded - Architect</li>
+        </mods>
+        <match Class="PatchOperationSequence">
+            <operations>
+                <li Class="PatchOperationAdd">
+                    <xpath>/Defs</xpath>
+                    <value>
+                        <TSO.TerrainLayerDef>
+                            <defName>Grass</defName>
+                            <order>15</order>
+                        </TSO.TerrainLayerDef>
+                    </value>
+                </li>
+                <li Class="PatchOperationAddModExtension">
+                    <xpath>/Defs/TerrainDef[defName="VFEArch_Grass" or defName="VFEArch_LawnPlot"]</xpath>
+                    <value>
+                        <li Class="TSO.TerrainExtension">
+                            <layers>
+                                <li>Grass</li>
+                            </layers>
+                        </li>
+                    </value>
+                </li>
+            </operations>
+        </match>
+    </Operation>
+</Patch>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Patch>
+    <Operation Class="PatchOperationAddModExtension">
+        <xpath>/Defs/TerrainDef[defName="Underwall"]</xpath>
+        <value>
+            <li Class="TSO.TerrainExtension">
+                <layers>
+                    <li>Base</li>
+                </layers>
+            </li>
+        </value>
+    </Operation>
+</Patch>
