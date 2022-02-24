@@ -9,20 +9,32 @@ namespace TSO
     {
         public PatchSet_Jobs(Harmony harm)
         {
+            harm.Patch(AccessTools.Method(typeof(JobDriver_RemoveFloor), nameof(JobDriver_RemoveFloor.DoEffect)), new HarmonyMethod(GetType(), nameof(DoEffect)));
+            harm.Patch(AccessTools.Method(typeof(Job), nameof(Job.ExposeData)), postfix: new HarmonyMethod(GetType(), nameof(SaveToRemove)));
             harm.Patch(AccessTools.Method(typeof(WorkGiver_ConstructDeliverResources), nameof(WorkGiver_ConstructDeliverResources.ShouldRemoveExistingFloorFirst)),
                 new HarmonyMethod(GetType(), nameof(ShouldRemoveExistingFloorFirst)));
             harm.Patch(AccessTools.Method(typeof(WorkGiver_ConstructDeliverResources), nameof(WorkGiver_ConstructDeliverResources.RemoveExistingFloorJob)),
                 new HarmonyMethod(GetType(), nameof(RemoveExistingFloorJob)));
-            harm.Patch(AccessTools.Method(typeof(JobDriver_RemoveFloor), nameof(JobDriver_RemoveFloor.DoEffect)), new HarmonyMethod(GetType(), nameof(DoEffect)));
-            harm.Patch(AccessTools.Method(typeof(Job), nameof(Job.ExposeData)), postfix: new HarmonyMethod(GetType(), nameof(SaveToRemove)));
+        }
+
+        public static bool DoEffect(JobDriver_RemoveFloor __instance, IntVec3 c)
+        {
+            if (!TSOMod.JobInfo.TryGetValue(__instance.job, out var extendedJobInfo) || extendedJobInfo.ToRemove is null) return true;
+            TSOMod.Grids[__instance.Map].RemoveTerrain(c, extendedJobInfo.ToRemove);
+            return false;
+        }
+
+        public static void SaveToRemove(Job __instance)
+        {
+            if (!TSOMod.JobInfo.TryGetValue(__instance, out var extendedJobInfo)) extendedJobInfo = null;
+            Scribe_Deep.Look(ref extendedJobInfo, "tso_extendedInfo");
+            if (Scribe.mode == LoadSaveMode.LoadingVars && extendedJobInfo is not null) TSOMod.JobInfo.Add(__instance, extendedJobInfo);
         }
 
         public static bool ShouldRemoveExistingFloorFirst(Pawn pawn, Blueprint blue, ref bool __result)
         {
-            if (blue.def.entityDefToBuild is TerrainDef terrain)
-                __result = TSOMod.Grids[pawn.Map].FirstBlockingTerrain(blue.Position, terrain) is {Removable: true};
-            else __result = false;
-
+            if (blue is not Blueprint_BuildTerrain bt) return true;
+            __result = bt.Mode == TerrainPlaceMode.Replace && TSOMod.Grids[pawn.Map].CanRemoveTopLayerAt(blue.Position);
             return false;
         }
 
@@ -32,26 +44,12 @@ namespace TSO
             {
                 var job = JobMaker.MakeJob(JobDefOf.RemoveFloor, blue.Position);
                 job.ignoreDesignations = true;
-                TSOMod.ToRemove.Add(job, TSOMod.Grids[pawn.Map].FirstBlockingTerrain(blue.Position, blue.def.entityDefToBuild as TerrainDef));
+                TSOMod.SetToRemove(job, TSOMod.Grids[pawn.Map].TerrainAt(blue.Position));
                 __result = job;
             }
             else __result = null;
 
             return false;
-        }
-
-        public static bool DoEffect(JobDriver_RemoveFloor __instance, IntVec3 c)
-        {
-            if (!TSOMod.ToRemove.TryGetValue(__instance.job, out var toRemove)) return true;
-            TSOMod.Grids[__instance.Map].RemoveTerrain(c, toRemove);
-            return false;
-        }
-
-        public static void SaveToRemove(Job __instance)
-        {
-            if (!TSOMod.ToRemove.TryGetValue(__instance, out var toRemove)) toRemove = null;
-            Scribe_Defs.Look(ref toRemove, "toRemove");
-            if (Scribe.mode == LoadSaveMode.LoadingVars && toRemove is not null) TSOMod.ToRemove.Add(__instance, toRemove);
         }
     }
 }

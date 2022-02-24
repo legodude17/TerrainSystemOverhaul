@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using Verse;
 
 namespace TSO
@@ -27,6 +28,28 @@ namespace TSO
             Widgets.Label(rect, text);
         }
 
-        public static TerrainDef GetBridge(this TerrainGrid terrGrid, IntVec3 c) => TSOMod.Grids[terrGrid.map].TerrainAtLayer(c, TerrainLayerDefOf.Bridge) ?? new TerrainDef();
+        // DO NOT CHANGE, USED FOR INTEROP
+        public static TerrainDef GetBridge(this TerrainGrid terrGrid, IntVec3 c) => TSOMod.Grids[terrGrid.map].GetBridgeAdvanced(c);
+        public static TerrainDef GetBridgeNoNull(this TerrainGrid terrGrid, IntVec3 c) => TSOMod.Grids[terrGrid.map].GetBridgeAdvanced(c) ?? new TerrainDef();
+
+        public static TerrainDef GetBridgeAdvanced(this AdvancedTerrainGrid grid, IntVec3 c) => grid.TerrainsAt(c)
+            .FirstOrFallback(terr => terr.GetModExtension<TerrainExtension>().layer == TerrainLayerDefOf.Bridge);
+
+        public static void Place<T>(this IList<T> source, int idx, T item)
+        {
+            if (idx >= source.Count)
+            {
+                while (idx > source.Count) source.Add(default);
+
+                source.Add(item);
+            }
+            else source.Insert(Mathf.Clamp(0, idx, source.Count - 1), item);
+        }
+
+        public static T Get<T>(this IList<T> source, int idx)
+        {
+            if (idx >= 0 && idx < source.Count) return source[idx];
+            return default;
+        }
     }
 }

@@ -58,6 +58,10 @@
   <ItemGroup>
     <Compile Include="AdvancedTerrainGrid.cs" />
     <Compile Include="AutoPatcher.cs" />
+    <Compile Include="Blueprint_BuildTerrain.cs" />
+    <Compile Include="Designator_BuildTerrain.cs" />
+    <Compile Include="Frame_Terrain.cs" />
+    <Compile Include="HarmonyPatches\PatchSet_Build.cs" />
     <Compile Include="HarmonyPatches\PatchSet_Grid.cs" />
     <Compile Include="HarmonyPatches\PatchSet_Jobs.cs" />
     <Compile Include="HarmonyPatches\PatchSet_Misc.cs" />

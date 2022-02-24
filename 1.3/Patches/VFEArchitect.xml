@@ -19,9 +19,7 @@
                     <xpath>/Defs/TerrainDef[defName="VFEArch_Grass" or defName="VFEArch_LawnPlot"]</xpath>
                     <value>
                         <li Class="TSO.TerrainExtension">
-                            <layers>
-                                <li>Grass</li>
-                            </layers>
+                            <layer>Grass</layer>
                         </li>
                     </value>
                 </li>

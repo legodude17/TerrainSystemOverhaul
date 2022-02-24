@@ -28,7 +28,7 @@ namespace TSO
 
         public static IEnumerable<CodeInstruction> ShouldDrawPropsBelow(IEnumerable<CodeInstruction> instructions) =>
             instructions.MethodReplacer(AccessTools.Method(typeof(TerrainGrid), nameof(TerrainGrid.TerrainAt), new[] {typeof(IntVec3)}),
-                AccessTools.Method(typeof(Utils), nameof(Utils.GetBridge)));
+                AccessTools.Method(typeof(Utils), nameof(Utils.GetBridgeNoNull)));
     }
 
     [StaticConstructorOnStartup]

@@ -25,7 +25,7 @@ namespace TSO
                 {
                     var terrainExtension = new TerrainExtension
                     {
-                        layers = ImpliedLayers(terrain).ToList()
+                        layer = ImpliedLayer(terrain)
                     };
 
                     foreach (var error in terrainExtension.ConfigErrors()) Log.Error($"[TSO] Config Error in TerrainExtension of {terrain}: {error}");
@@ -38,18 +38,18 @@ namespace TSO
             }
         }
 
-        private static IEnumerable<TerrainLayerDef> ImpliedLayers(TerrainDef terrain)
+        private static TerrainLayerDef ImpliedLayer(TerrainDef terrain)
         {
             if (terrain.bridge || terrain.modExtensions is not null && terrain.modExtensions.Any(ext => BridgeExtensions.Contains(ext.GetType().Name)) ||
                 terrain.terrainAffordanceNeeded is {defName: "Bridgeable"} or {defName: "BridgeableDeep"})
-                yield return TerrainLayerDefOf.Bridge;
-            else if (terrain.IsCarpet) yield return TerrainLayerDefOf.Carpet;
-            else if (terrain.IsRoad || terrain.HasTag("Floor") || terrain.IsFine) yield return TerrainLayerDefOf.Floor;
-            else if (terrain.IsWater || terrain.IsSoil || terrain.IsRiver || terrain.generatedFilth is not null || terrain.defName.EndsWith("_Rough") ||
-                     terrain.defName.EndsWith("_RoughHewn") || terrain.defName.EndsWith("_Smooth")) yield return TerrainLayerDefOf.Base;
-            else if (terrain.defName.Contains("Burned"))
-                foreach (var layer in ImpliedLayers(DefDatabase<TerrainDef>.AllDefs.FirstOrDefault(def => def.burnedDef == terrain)))
-                    yield return layer;
+                return TerrainLayerDefOf.Bridge;
+            if (terrain.IsCarpet) return TerrainLayerDefOf.Carpet;
+            if (terrain.IsRoad || terrain.HasTag("Floor") || terrain.IsFine) return TerrainLayerDefOf.Floor;
+            if (terrain.IsWater || terrain.IsSoil || terrain.IsRiver || terrain.generatedFilth is not null || terrain.defName.EndsWith("_Rough") ||
+                terrain.defName.EndsWith("_RoughHewn") || terrain.defName.EndsWith("_Smooth")) return TerrainLayerDefOf.Base;
+            if (terrain.defName.Contains("Burned"))
+                return ImpliedLayer(DefDatabase<TerrainDef>.AllDefs.FirstOrDefault(def => def.burnedDef == terrain));
+            return null;
         }
 
         private static IEnumerable<TerrainDef> ImpliedFromStuff(TerrainDef terrain)

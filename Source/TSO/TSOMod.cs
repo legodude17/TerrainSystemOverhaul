@@ -13,7 +13,7 @@ namespace TSO
         public static Harmony Harm;
 
         public static Dictionary<Map, AdvancedTerrainGrid> Grids = new();
-        public static ConditionalWeakTable<Job, TerrainDef> ToRemove = new();
+        public static ConditionalWeakTable<Job, ExtendedJobInfo> JobInfo = new();
         private static readonly List<PatchSet> PATCHES = new();
 
         public TSOMod(ModContentPack content) : base(content)
@@ -21,8 +21,18 @@ namespace TSO
             Harm = new Harmony("legoduded17.tso");
             foreach (var type in typeof(PatchSet).AllSubclassesNonAbstract()) PATCHES.Add((PatchSet) Activator.CreateInstance(type, Harm));
         }
+
+        public static void SetToRemove(Job job, TerrainDef toRemove)
+        {
+            if (JobInfo.TryGetValue(job, out var info)) info.ToRemove = toRemove;
+            else JobInfo.Add(job, new ExtendedJobInfo {ToRemove = toRemove});
+        }
     }
 
+    public class ExtendedJobInfo
+    {
+        public TerrainDef ToRemove;
+    }
 
     // ReSharper disable InconsistentNaming
     public class TerrainLayerDef : Def
@@ -39,12 +49,11 @@ namespace TSO
 
     public class TerrainExtension : DefModExtension
     {
-        public List<TerrainLayerDef> layers;
+        public TerrainLayerDef layer;
 
         public override IEnumerable<string> ConfigErrors()
         {
-            if (layers.NullOrEmpty()) yield return "Must specify at least one layer";
-            else if (layers.Any(layer => layer is null)) yield return "Must not have any null layers";
+            if (layer is null) yield return "Must not have null layer";
         }
     }
 
