@@ -94,6 +94,12 @@ namespace TSO
             map.terrainGrid.DoTerrainChangedEffects(c);
         }
 
+        public void ReplaceTerrain(IntVec3 c, TerrainDef newTerr)
+        {
+            RemoveTopLayer(c, false);
+            SetTerrain(c, newTerr);
+        }
+
         public string GetTerrainListString(IntVec3 c)
         {
             return TerrainsAt(c).Select(terrain => terrain.LabelCap.Resolve()).Reverse().ToLineList();

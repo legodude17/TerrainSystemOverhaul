@@ -51,5 +51,10 @@ namespace TSO
             if (idx >= 0 && idx < source.Count) return source[idx];
             return default;
         }
+
+        public static void ReplaceTerrain(this TerrainGrid grid, IntVec3 c, TerrainDef newTerr)
+        {
+            TSOMod.Grids[grid.map].ReplaceTerrain(c, newTerr);
+        }
     }
 }
