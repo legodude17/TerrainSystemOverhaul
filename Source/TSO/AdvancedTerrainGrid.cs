@@ -8,8 +8,11 @@ namespace TSO
 {
     public sealed class AdvancedTerrainGrid : IExposable
     {
+        private readonly HashSet<int> batchModified = new();
         private readonly Map map;
         private List<TerrainDef>[] grid;
+
+        private bool inBatch;
 
         public AdvancedTerrainGrid(Map map)
         {
@@ -68,6 +71,15 @@ namespace TSO
             RecacheTop();
         }
 
+        public void BeginBatch() => inBatch = true;
+
+        public void EndBatch()
+        {
+            inBatch = false;
+            foreach (var ind in batchModified) RecacheTop(ind);
+            batchModified.Clear();
+        }
+
         public TerrainDef TerrainAt(int ind) => TopGrid[ind];
 
         public TerrainDef TerrainAt(IntVec3 c) => TopGrid[map.cellIndices.CellToIndex(c)];
@@ -76,6 +88,8 @@ namespace TSO
 
         public TerrainDef UnderTerrainAt(IntVec3 c) => grid[map.cellIndices.CellToIndex(c)][0];
         public IEnumerable<TerrainDef> TerrainsAt(int ind) => grid[ind];
+        public List<TerrainDef> TerrainListAt(int ind) => grid[ind];
+        public List<TerrainDef> TerrainListAt(IntVec3 c) => grid[map.cellIndices.CellToIndex(c)];
         public IEnumerable<TerrainDef> TerrainsAt(IntVec3 c) => grid[map.cellIndices.CellToIndex(c)];
 
         public void SetTerrain(IntVec3 c, TerrainDef newTerr)
@@ -100,28 +114,52 @@ namespace TSO
             SetTerrain(c, newTerr);
         }
 
+        public void ReplaceTerrain(IntVec3 c, TerrainDef oldTerr, TerrainDef newTerr)
+        {
+            var ind = map.cellIndices.CellToIndex(c);
+            var list = grid[ind];
+            for (var i = 0; i < list.Count; i++)
+                if (list[i] == oldTerr)
+                {
+                    list[i] = newTerr;
+                    RecacheTop(ind);
+                    map.terrainGrid.DoTerrainChangedEffects(c);
+                    break;
+                }
+        }
+
         public string GetTerrainListString(IntVec3 c)
         {
-            return TerrainsAt(c).Select(terrain => terrain.LabelCap.Resolve()).Reverse().ToLineList();
+            return TerrainsAt(c).Reverse().Select(terrain => terrain.LabelCap.Resolve()).ToLineList();
         }
 
         public void RemoveTerrain(IntVec3 c, TerrainDef toRemove, bool doLeavings = true)
         {
             var ind = map.cellIndices.CellToIndex(c);
+            if (toRemove == TopGrid[ind])
+            {
+                RemoveTopLayer(c, doLeavings);
+                return;
+            }
+
             if (doLeavings) GenLeaving.DoLeavingsFor(toRemove, c, map);
-
             grid[ind].Remove(toRemove);
-
             RecacheTop(ind);
             map.terrainGrid.DoTerrainChangedEffects(c);
         }
 
         public void RemoveTopLayer(IntVec3 c, bool doLeavings = true)
         {
-            RemoveTerrain(c, TerrainAt(c), doLeavings);
+            var ind = map.cellIndices.CellToIndex(c);
+            var list = grid[ind];
+            if (doLeavings) GenLeaving.DoLeavingsFor(TopGrid[ind], c, map);
+            list.RemoveAt(list.Count - 1);
+            grid[ind] = list;
+            RecacheTop(ind);
+            map.terrainGrid.DoTerrainChangedEffects(c);
         }
 
-        public bool CanRemoveTopLayerAt(IntVec3 c) => TopGrid[map.cellIndices.CellToIndex(c)].Removable;
+        public bool CanRemoveTopLayerAt(IntVec3 c) => TopGrid[map.cellIndices.CellToIndex(c)].Removable();
 
         private void ExposeTerrainGrid(TerrainDef[] grid, string label, TerrainDef fallbackTerrain = null)
         {
@@ -167,7 +205,25 @@ namespace TSO
 
         private void RecacheTop(int index)
         {
-            TopGrid[index] = grid[index].LastOrDefault();
+            if (inBatch)
+            {
+                batchModified.Add(index);
+                return;
+            }
+
+            var list = grid[index];
+            if (list.Count == 0) return;
+            var top = list[list.Count - 1].Clone();
+            for (var i = 0; i < list.Count; i++)
+            {
+                var terrain = list[i];
+                if (terrain.bridge) top.bridge = true;
+                if (top.IsCarpet && i == list.Count - 2) top.pathCost = terrain.pathCost;
+            }
+
+            top.ClearCachedData();
+
+            TopGrid[index] = top;
         }
 
         public void ResetGrids()

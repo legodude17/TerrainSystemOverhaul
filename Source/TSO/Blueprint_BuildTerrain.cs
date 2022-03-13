@@ -5,6 +5,7 @@ namespace TSO
 {
     public class Blueprint_BuildTerrain : Blueprint_Build
     {
+        public bool HasRemovedBelow;
         public TerrainPlaceMode Mode;
         public TerrainDef Terrain => def.entityDefToBuild as TerrainDef;
 
@@ -19,6 +20,9 @@ namespace TSO
         {
             base.ExposeData();
             Scribe_Values.Look(ref Mode, "mode");
+            Scribe_Values.Look(ref HasRemovedBelow, "hasRemovedBelow");
         }
+
+        public override string GetInspectString() => $"{base.GetInspectString()}\n{"TSO.Mode".Translate()} {Mode.Translated()}";
     }
 }

@@ -25,6 +25,16 @@ namespace TSO
                 transpiler: new HarmonyMethod(GetType(), nameof(BetterTerrainInfo)));
             harm.Patch(AccessTools.Method(typeof(SectionLayer_BridgeProps), nameof(SectionLayer_BridgeProps.ShouldDrawPropsBelow)),
                 new HarmonyMethod(GetType(), nameof(ShouldDrawPropsBelow)));
+            harm.Patch(AccessTools.Method(typeof(CompTerrainPumpDry), nameof(CompTerrainPumpDry.AffectCell), new[] {typeof(Map), typeof(IntVec3)}),
+                new HarmonyMethod(GetType(), nameof(DryCell)));
+        }
+
+        public static bool DryCell(Map map, IntVec3 c)
+        {
+            foreach (var terrainDef in TSOMod.Grids[map].TerrainsAt(c))
+                if (CompTerrainPumpDry.GetTerrainToDryTo(map, terrainDef) is { } driesTo)
+                    TSOMod.Grids[map].ReplaceTerrain(c, terrainDef, driesTo);
+            return false;
         }
 
         public static bool CalculateWealthFloors(WealthWatcher __instance, ref float __result)

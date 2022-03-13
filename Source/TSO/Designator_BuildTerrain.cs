@@ -14,14 +14,12 @@ namespace TSO
 
         public TerrainDef Terrain => entDef as TerrainDef;
 
-        private static void GetTerrainMode(Action<TerrainPlaceMode> action, Predicate<TerrainPlaceMode> validator)
+        public static void GetTerrainMode(Action<TerrainPlaceMode> action, Predicate<TerrainPlaceMode> validator)
         {
-            var list = new List<FloatMenuOption>();
-            if (validator(TerrainPlaceMode.OnTop))
-                list.Add(new FloatMenuOption("Place over", () => { action(TerrainPlaceMode.OnTop); }));
-
-            if (validator(TerrainPlaceMode.Replace))
-                list.Add(new FloatMenuOption("Replace", () => { action(TerrainPlaceMode.Replace); }));
+            var list = (from mode in Enum.GetValues(typeof(TerrainPlaceMode)).OfType<TerrainPlaceMode>()
+                where mode != TerrainPlaceMode.None
+                where validator(mode)
+                select new FloatMenuOption(mode.Translated(), () => { action(mode); })).ToList();
 
             switch (list.Count)
             {
@@ -73,15 +71,22 @@ namespace TSO
             return new AcceptanceReport(a.Reason ?? b.Reason);
         }
 
-        private static AcceptanceReport CanPlaceAt(TerrainDef terrain, IntVec3 center, Map map, TerrainPlaceMode mode, bool godMode = false)
+        public static AcceptanceReport CanPlaceAt(TerrainDef terrain, IntVec3 center, Map map, TerrainPlaceMode mode, bool godMode = false)
         {
+            var grid = TSOMod.Grids[map];
+            var current = grid.TerrainAt(center);
             switch (mode)
             {
                 case TerrainPlaceMode.OnTop:
+                    Log.Message($"SRFCompat: {(SRFCompat.Active ? "Active" : "Inactive")}. current.IsWater: {current.IsWater}. terrain.IsDiggable(): {terrain.IsDiggable()}");
+                    if (SRFCompat.Active && current.IsWater && terrain.IsDiggable()) return new AcceptanceReport("TSO.CannotPlace.SoilOnWater".Translate(terrain.LabelCap));
                     return GenConstruct.CanPlaceBlueprintAt(terrain, center, Rot4.North, map, godMode);
                 case TerrainPlaceMode.Replace:
-                    var list = TSOMod.Grids[map].TerrainsAt(center).ToList();
-                    if (list.Count == 1) return new AcceptanceReport("Cannot replace bottom type.");
+                    Log.Message($"SRFCompat: {(SRFCompat.Active ? "Active" : "Inactive")}. current.IsWater: {current.IsWater}. terrain.IsDiggable(): {terrain.IsDiggable()}");
+                    if (SRFCompat.Active && current.IsWater && terrain.IsDiggable()) return true;
+                    if (!grid.CanRemoveTopLayerAt(center)) return new AcceptanceReport("TSO.CannotRemove".Translate(current.LabelCap));
+                    var list = grid.TerrainListAt(center);
+                    if (list.Count == 1) return new AcceptanceReport("TSO.CannotReplace.Bottom".Translate());
                     var a = GenConstruct.CanPlaceBlueprintAt(terrain, center, Rot4.North, map, godMode);
                     var affordance = terrain.terrainAffordanceNeeded;
                     if (a.Accepted || affordance is null && a.Reason == "TerrainCannotSupport".Translate(terrain).CapitalizeFirst() || affordance is not null && a.Reason ==

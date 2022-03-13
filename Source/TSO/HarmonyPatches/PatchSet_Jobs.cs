@@ -19,6 +19,7 @@ namespace TSO
 
         public static bool DoEffect(JobDriver_RemoveFloor __instance, IntVec3 c)
         {
+            if (c.GetFirstThing<Blueprint_BuildTerrain>(__instance.Map) is {Mode: TerrainPlaceMode.Replace, HasRemovedBelow: false} bt) bt.HasRemovedBelow = true;
             if (!TSOMod.JobInfo.TryGetValue(__instance.job, out var extendedJobInfo) || extendedJobInfo.ToRemove is null) return true;
             TSOMod.Grids[__instance.Map].RemoveTerrain(c, extendedJobInfo.ToRemove);
             return false;
@@ -34,7 +35,7 @@ namespace TSO
         public static bool ShouldRemoveExistingFloorFirst(Pawn pawn, Blueprint blue, ref bool __result)
         {
             if (blue is not Blueprint_BuildTerrain bt) return true;
-            __result = bt.Mode == TerrainPlaceMode.Replace && TSOMod.Grids[pawn.Map].CanRemoveTopLayerAt(blue.Position);
+            __result = bt.Mode == TerrainPlaceMode.Replace && !bt.HasRemovedBelow && TSOMod.Grids[pawn.Map].CanRemoveTopLayerAt(blue.Position);
             return false;
         }
 
@@ -42,10 +43,34 @@ namespace TSO
         {
             if (WorkGiver_ConstructDeliverResources.ShouldRemoveExistingFloorFirst(pawn, blue) && pawn.CanReserve(blue.Position, 1, -1, ReservationLayerDefOf.Floor))
             {
-                var job = JobMaker.MakeJob(JobDefOf.RemoveFloor, blue.Position);
-                job.ignoreDesignations = true;
-                TSOMod.SetToRemove(job, TSOMod.Grids[pawn.Map].TerrainAt(blue.Position));
-                __result = job;
+                var existing = TSOMod.Grids[pawn.Map].TerrainAt(blue.Position);
+                if (existing.Removable)
+                {
+                    var job = JobMaker.MakeJob(JobDefOf.RemoveFloor, blue.Position);
+                    job.ignoreDesignations = true;
+                    __result = job;
+                }
+                else if (SRFCompat.Active)
+                {
+                    if (existing.IsDiggable())
+                    {
+                        var job = JobMaker.MakeJob(DefDatabase<JobDef>.GetNamed("SR_Dig"), blue.Position);
+                        job.ignoreDesignations = true;
+                        __result = job;
+                    }
+                    else if (existing.IsWater && blue.def.entityDefToBuild is TerrainDef def && def.IsDiggable())
+                        __result = null;
+                    else
+                    {
+                        Log.Error($"[TSO] Tried to remove existing floor {existing} but it was not removable");
+                        __result = null;
+                    }
+                }
+                else
+                {
+                    Log.Error($"[TSO] Tried to remove existing floor {existing} but it was not removable");
+                    __result = null;
+                }
             }
             else __result = null;
 

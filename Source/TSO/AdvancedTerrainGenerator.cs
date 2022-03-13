@@ -10,7 +10,7 @@ namespace TSO
         {
             BeachMaker.Init(map);
             var riverMaker = genStep.GenerateRiver(map);
-            var list = new List<IntVec3>();
+            var roofNoCollapseLocs = new List<IntVec3>();
             var elevation = MapGenerator.Elevation;
             var fertility = MapGenerator.Fertility;
             var caves = MapGenerator.Caves;
@@ -29,6 +29,7 @@ namespace TSO
                     if (patchMaker.TerrainAt(cell, map, fertility[cell]) is { } terrain2)
                         grid.SetTerrain(cell, terrain2);
             }
+
 
             // Step 3: Generate water
             foreach (var cell in map.AllCells)
@@ -49,11 +50,11 @@ namespace TSO
             foreach (var cell in map.AllCells)
                 if (grid.TerrainAt(cell).IsRiver && cell.GetEdifice(map) is { } edifice)
                 {
-                    list.Add(edifice.Position);
+                    roofNoCollapseLocs.Add(edifice.Position);
                     edifice.Destroy();
                 }
 
-            RoofCollapseCellsFinder.RemoveBulkCollapsingRoofs(list, map);
+            RoofCollapseCellsFinder.RemoveBulkCollapsingRoofs(roofNoCollapseLocs, map);
 
             // Step 5: Validate river
             riverMaker?.ValidatePassage(map);

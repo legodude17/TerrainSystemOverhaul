@@ -70,6 +70,7 @@
     <Compile Include="HarmonyPatches\PatchSet_Misc.cs" />
     <Compile Include="HarmonyPatches\PatchSet_ModCompat.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SRFCompat.cs" />
     <Compile Include="TSOMod.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
