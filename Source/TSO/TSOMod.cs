@@ -35,10 +35,8 @@ namespace TSO
     }
 
     // ReSharper disable InconsistentNaming
-    public class TerrainLayerDef : Def
+    public class TerrainTypeDef : Def
     {
-        public int order;
-
         public override IEnumerable<string> ConfigErrors()
         {
             label ??= defName.ToLower();
@@ -49,25 +47,25 @@ namespace TSO
 
     public class TerrainExtension : DefModExtension
     {
-        public TerrainLayerDef layer;
+        public TerrainTypeDef type;
 
         public override IEnumerable<string> ConfigErrors()
         {
-            if (layer is null) yield return "Must not have null layer";
+            if (type is null) yield return "Must not have null type";
         }
     }
 
     [DefOf]
-    public static class TerrainLayerDefOf
+    public static class TerrainTypeDefOf
     {
-        public static TerrainLayerDef Base;
-        public static TerrainLayerDef Bridge;
-        public static TerrainLayerDef Floor;
-        public static TerrainLayerDef Carpet;
+        public static TerrainTypeDef Base;
+        public static TerrainTypeDef Bridge;
+        public static TerrainTypeDef Floor;
+        public static TerrainTypeDef Carpet;
 
-        static TerrainLayerDefOf()
+        static TerrainTypeDefOf()
         {
-            DefOfHelper.EnsureInitializedInCtor(typeof(TerrainLayerDefOf));
+            DefOfHelper.EnsureInitializedInCtor(typeof(TerrainTypeDefOf));
         }
     }
 

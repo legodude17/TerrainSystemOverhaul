@@ -81,7 +81,7 @@ namespace TSO
                     return GenConstruct.CanPlaceBlueprintAt(terrain, center, Rot4.North, map, godMode);
                 case TerrainPlaceMode.Replace:
                     var list = TSOMod.Grids[map].TerrainsAt(center).ToList();
-                    if (list.Count == 1) return new AcceptanceReport("Cannot replace bottom layer.");
+                    if (list.Count == 1) return new AcceptanceReport("Cannot replace bottom type.");
                     var a = GenConstruct.CanPlaceBlueprintAt(terrain, center, Rot4.North, map, godMode);
                     var affordance = terrain.terrainAffordanceNeeded;
                     if (a.Accepted || affordance is null && a.Reason == "TerrainCannotSupport".Translate(terrain).CapitalizeFirst() || affordance is not null && a.Reason ==

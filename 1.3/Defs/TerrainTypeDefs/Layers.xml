@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Defs>
+    <TSO.TerrainTypeDef>
+        <defName>Base</defName>
+    </TSO.TerrainTypeDef>
+    <TSO.TerrainTypeDef>
+        <defName>Bridge</defName>
+    </TSO.TerrainTypeDef>
+    <TSO.TerrainTypeDef>
+        <defName>Floor</defName>
+    </TSO.TerrainTypeDef>
+    <TSO.TerrainTypeDef>
+        <defName>Carpet</defName>
+    </TSO.TerrainTypeDef>
+</Defs>

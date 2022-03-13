@@ -25,7 +25,7 @@ namespace TSO
                 {
                     var terrainExtension = new TerrainExtension
                     {
-                        layer = ImpliedLayer(terrain)
+                        type = ImpliedLayer(terrain)
                     };
 
                     foreach (var error in terrainExtension.ConfigErrors()) Log.Error($"[TSO] Config Error in TerrainExtension of {terrain}: {error}");
@@ -38,15 +38,15 @@ namespace TSO
             }
         }
 
-        private static TerrainLayerDef ImpliedLayer(TerrainDef terrain)
+        private static TerrainTypeDef ImpliedLayer(TerrainDef terrain)
         {
             if (terrain.bridge || terrain.modExtensions is not null && terrain.modExtensions.Any(ext => BridgeExtensions.Contains(ext.GetType().Name)) ||
                 terrain.terrainAffordanceNeeded is {defName: "Bridgeable"} or {defName: "BridgeableDeep"})
-                return TerrainLayerDefOf.Bridge;
-            if (terrain.IsCarpet) return TerrainLayerDefOf.Carpet;
-            if (terrain.IsRoad || terrain.HasTag("Floor") || terrain.IsFine) return TerrainLayerDefOf.Floor;
+                return TerrainTypeDefOf.Bridge;
+            if (terrain.IsCarpet) return TerrainTypeDefOf.Carpet;
+            if (terrain.IsRoad || terrain.HasTag("Floor") || terrain.IsFine) return TerrainTypeDefOf.Floor;
             if (terrain.IsWater || terrain.IsSoil || terrain.IsRiver || terrain.generatedFilth is not null || terrain.defName.EndsWith("_Rough") ||
-                terrain.defName.EndsWith("_RoughHewn") || terrain.defName.EndsWith("_Smooth")) return TerrainLayerDefOf.Base;
+                terrain.defName.EndsWith("_RoughHewn") || terrain.defName.EndsWith("_Smooth")) return TerrainTypeDefOf.Base;
             if (terrain.defName.Contains("Burned"))
                 return ImpliedLayer(DefDatabase<TerrainDef>.AllDefs.FirstOrDefault(def => def.burnedDef == terrain));
             return null;

@@ -9,17 +9,16 @@
                 <li Class="PatchOperationAdd">
                     <xpath>/Defs</xpath>
                     <value>
-                        <TSO.TerrainLayerDef>
+                        <TSO.TerrainTypeDef>
                             <defName>Grass</defName>
-                            <order>15</order>
-                        </TSO.TerrainLayerDef>
+                        </TSO.TerrainTypeDef>
                     </value>
                 </li>
                 <li Class="PatchOperationAddModExtension">
                     <xpath>/Defs/TerrainDef[defName="VFEArch_Grass" or defName="VFEArch_LawnPlot"]</xpath>
                     <value>
                         <li Class="TSO.TerrainExtension">
-                            <layer>Grass</layer>
+                            <type>Grass</type>
                         </li>
                     </value>
                 </li>

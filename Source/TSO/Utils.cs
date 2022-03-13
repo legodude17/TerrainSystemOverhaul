@@ -33,7 +33,7 @@ namespace TSO
         public static TerrainDef GetBridgeNoNull(this TerrainGrid terrGrid, IntVec3 c) => TSOMod.Grids[terrGrid.map].GetBridgeAdvanced(c) ?? new TerrainDef();
 
         public static TerrainDef GetBridgeAdvanced(this AdvancedTerrainGrid grid, IntVec3 c) => grid.TerrainsAt(c)
-            .FirstOrFallback(terr => terr.GetModExtension<TerrainExtension>().layer == TerrainLayerDefOf.Bridge);
+            .FirstOrFallback(terr => terr.GetModExtension<TerrainExtension>().type == TerrainTypeDefOf.Bridge);
 
         public static void Place<T>(this IList<T> source, int idx, T item)
         {

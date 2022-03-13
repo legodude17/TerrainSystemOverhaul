@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="AdvancedTerrainGenerator.cs" />
     <Compile Include="AdvancedTerrainGrid.cs" />
+    <Compile Include="API.cs" />
     <Compile Include="AutoPatcher.cs" />
     <Compile Include="Blueprint_BuildTerrain.cs" />
     <Compile Include="Designator_BuildTerrain.cs" />

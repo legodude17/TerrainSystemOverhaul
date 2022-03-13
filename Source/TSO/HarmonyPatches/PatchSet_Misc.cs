@@ -55,7 +55,7 @@ namespace TSO
         }
 
         public static IEnumerable<StatDrawEntry> LayerStat(IEnumerable<StatDrawEntry> stats, StatRequest req) => stats.Append(new StatDrawEntry(StatCategoryDefOf.Terrain,
-            "Layer".Translate(), req.Def.GetModExtension<TerrainExtension>().layer.LabelCap, "", 3000));
+            "Layer".Translate(), req.Def.GetModExtension<TerrainExtension>().type.LabelCap, "", 3000));
 
         public static IEnumerable<CodeInstruction> BetterTerrainInfo(IEnumerable<CodeInstruction> instructions)
         {
