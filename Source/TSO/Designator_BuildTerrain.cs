@@ -78,11 +78,11 @@ namespace TSO
             switch (mode)
             {
                 case TerrainPlaceMode.OnTop:
-                    Log.Message($"SRFCompat: {(SRFCompat.Active ? "Active" : "Inactive")}. current.IsWater: {current.IsWater}. terrain.IsDiggable(): {terrain.IsDiggable()}");
+                    // Log.Message($"SRFCompat: {(SRFCompat.Active ? "Active" : "Inactive")}. current.IsWater: {current.IsWater}. terrain.IsDiggable(): {terrain.IsDiggable()}");
                     if (SRFCompat.Active && current.IsWater && terrain.IsDiggable()) return new AcceptanceReport("TSO.CannotPlace.SoilOnWater".Translate(terrain.LabelCap));
                     return GenConstruct.CanPlaceBlueprintAt(terrain, center, Rot4.North, map, godMode);
                 case TerrainPlaceMode.Replace:
-                    Log.Message($"SRFCompat: {(SRFCompat.Active ? "Active" : "Inactive")}. current.IsWater: {current.IsWater}. terrain.IsDiggable(): {terrain.IsDiggable()}");
+                    // Log.Message($"SRFCompat: {(SRFCompat.Active ? "Active" : "Inactive")}. current.IsWater: {current.IsWater}. terrain.IsDiggable(): {terrain.IsDiggable()}");
                     if (SRFCompat.Active && current.IsWater && terrain.IsDiggable()) return true;
                     if (!grid.CanRemoveTopLayerAt(center)) return new AcceptanceReport("TSO.CannotRemove".Translate(current.LabelCap));
                     var list = grid.TerrainListAt(center);

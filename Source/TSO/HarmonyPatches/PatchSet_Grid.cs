@@ -77,7 +77,8 @@ namespace TSO
 
         public static bool SetUnderTerrain(Map ___map, IntVec3 c, TerrainDef newTerr)
         {
-            TSOMod.Grids[___map].SetTerrain(c, newTerr);
+            var grid = TSOMod.Grids[___map];
+            grid.ReplaceTerrain(c, grid.UnderTerrainAt(c), newTerr);
             return false;
         }
 

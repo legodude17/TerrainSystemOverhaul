@@ -1,5 +1,6 @@
 <loadFolders>
 	<v1.3>
 		<li>1.3</li>
+		<li IfModActive="udderlyevelyn.waterfreezes">WaterFreezes</li>
 	</v1.3>
 </loadFolders>

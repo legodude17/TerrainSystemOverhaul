@@ -133,6 +133,17 @@ namespace TSO
             return TerrainsAt(c).Reverse().Select(terrain => terrain.LabelCap.Resolve()).ToLineList();
         }
 
+        public bool TryInsertTerrain(IntVec3 c, TerrainDef target, TerrainDef toInsert, int offset = 0)
+        {
+            var ind = map.cellIndices.CellToIndex(c);
+            var list = grid[ind];
+            var idx = list.IndexOf(target);
+            if (idx == -1) return false;
+            list.Place(idx + offset, toInsert);
+            RecacheTop(ind);
+            return true;
+        }
+
         public void RemoveTerrain(IntVec3 c, TerrainDef toRemove, bool doLeavings = true)
         {
             var ind = map.cellIndices.CellToIndex(c);
