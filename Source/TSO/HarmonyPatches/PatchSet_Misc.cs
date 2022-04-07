@@ -25,6 +25,16 @@ namespace TSO
                 transpiler: new HarmonyMethod(GetType(), nameof(BetterTerrainInfo)));
             harm.Patch(AccessTools.Method(typeof(SectionLayer_BridgeProps), nameof(SectionLayer_BridgeProps.ShouldDrawPropsBelow)),
                 new HarmonyMethod(GetType(), nameof(ShouldDrawPropsBelow)));
+            harm.Patch(AccessTools.Method(typeof(CompTerrainPumpDry), nameof(CompTerrainPumpDry.AffectCell), new[] {typeof(Map), typeof(IntVec3)}),
+                new HarmonyMethod(GetType(), nameof(DryCell)));
+        }
+
+        public static bool DryCell(Map map, IntVec3 c)
+        {
+            foreach (var terrainDef in TSOMod.Grids[map].TerrainsAt(c))
+                if (CompTerrainPumpDry.GetTerrainToDryTo(map, terrainDef) is { } driesTo)
+                    TSOMod.Grids[map].ReplaceTerrain(c, terrainDef, driesTo);
+            return false;
         }
 
         public static bool CalculateWealthFloors(WealthWatcher __instance, ref float __result)
@@ -55,7 +65,7 @@ namespace TSO
         }
 
         public static IEnumerable<StatDrawEntry> LayerStat(IEnumerable<StatDrawEntry> stats, StatRequest req) => stats.Append(new StatDrawEntry(StatCategoryDefOf.Terrain,
-            "Layer".Translate(), req.Def.GetModExtension<TerrainExtension>().layers.Join(delimiter: ", "), "", 3000));
+            "Layer".Translate(), req.Def.GetModExtension<TerrainExtension>().type.LabelCap, "", 3000));
 
         public static IEnumerable<CodeInstruction> BetterTerrainInfo(IEnumerable<CodeInstruction> instructions)
         {
@@ -77,14 +87,14 @@ namespace TSO
         public static bool ShouldDrawPropsBelow(IntVec3 c, TerrainGrid terrGrid, ref bool __result)
         {
             var grid = TSOMod.Grids[terrGrid.map];
-            if (grid.TerrainAtLayer(c, TerrainLayerDefOf.Bridge) is not {bridge: true})
+            if (grid.GetBridgeAdvanced(c) is not {bridge: true})
                 __result = false;
             else
             {
                 var c2 = c;
                 c2.z--;
                 var map = terrGrid.map;
-                __result = c2.InBounds(map) && grid.TerrainAtLayer(c2, TerrainLayerDefOf.Bridge) is not {bridge: true} &&
+                __result = c2.InBounds(map) && grid.GetBridgeAdvanced(c2) is not {bridge: true} &&
                            (grid.TerrainAt(c).passability == Traversability.Impassable ||
                             c2.SupportsStructureType(map, TerrainDefOf.Bridge.terrainAffordanceNeeded));
             }

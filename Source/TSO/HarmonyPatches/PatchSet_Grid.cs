@@ -27,9 +27,21 @@ namespace TSO
 
         public static bool ExposeGrid(TerrainGrid __instance)
         {
-            var atg = TSOMod.Grids[__instance.map];
-            Scribe_Deep.Look(ref atg, "advancedTerrainGrid", __instance.map);
-            TSOMod.Grids[__instance.map] = atg;
+            if (!TSOMod.Grids.TryGetValue(__instance.map, out var atg)) atg = new AdvancedTerrainGrid(__instance.map);
+            if (Scribe.EnterNode("advancedTerrainGrid"))
+                try
+                {
+                    atg.ExposeData();
+                }
+                finally
+                {
+                    Scribe.ExitNode();
+                }
+            else
+                atg.ExposeDataBackCompat();
+
+            TSOMod.Grids.SetOrAdd(__instance.map, atg);
+
             return false;
         }
 
@@ -65,7 +77,8 @@ namespace TSO
 
         public static bool SetUnderTerrain(Map ___map, IntVec3 c, TerrainDef newTerr)
         {
-            TSOMod.Grids[___map].SetTerrain(c, newTerr);
+            var grid = TSOMod.Grids[___map];
+            grid.ReplaceTerrain(c, grid.UnderTerrainAt(c), newTerr);
             return false;
         }
 

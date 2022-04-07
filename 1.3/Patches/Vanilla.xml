@@ -4,9 +4,7 @@
         <xpath>/Defs/TerrainDef[defName="Underwall"]</xpath>
         <value>
             <li Class="TSO.TerrainExtension">
-                <layers>
-                    <li>Base</li>
-                </layers>
+                <type>Base</type>
             </li>
         </value>
     </Operation>

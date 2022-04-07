@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.31911.196
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TSO", "TSO.csproj", "{22346D49-765C-47C0-928B-37A26BE41F68}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaterFreezesInterop", "..\WaterFreezesInterop\WaterFreezesInterop.csproj", "{922E5A38-4885-4A36-B162-2ADDD3B7D06C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{22346D49-765C-47C0-928B-37A26BE41F68}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{22346D49-765C-47C0-928B-37A26BE41F68}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{22346D49-765C-47C0-928B-37A26BE41F68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{922E5A38-4885-4A36-B162-2ADDD3B7D06C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{922E5A38-4885-4A36-B162-2ADDD3B7D06C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{922E5A38-4885-4A36-B162-2ADDD3B7D06C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{922E5A38-4885-4A36-B162-2ADDD3B7D06C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

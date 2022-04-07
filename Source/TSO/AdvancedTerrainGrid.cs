@@ -8,8 +8,11 @@ namespace TSO
 {
     public sealed class AdvancedTerrainGrid : IExposable
     {
+        private readonly HashSet<int> batchModified = new();
         private readonly Map map;
-        private Dictionary<TerrainLayerDef, TerrainDef[]> grids;
+        private List<TerrainDef>[] grid;
+
+        private bool inBatch;
 
         public AdvancedTerrainGrid(Map map)
         {
@@ -22,75 +25,152 @@ namespace TSO
         public void ExposeData()
         {
             if (Scribe.mode == LoadSaveMode.Saving)
-                foreach (var grid in grids)
-                    ExposeTerrainGrid(grid.Value, grid.Key.defName);
+            {
+                var max = grid.Max(list => list.Count);
+                for (var layer = 0; layer < max; layer++)
+                {
+                    var layerGrid = grid.Select(g => g.Get(layer)).ToArray();
+                    ExposeTerrainGrid(layerGrid, $"Layer{layer}", layer == 0 ? TerrainDefOf.Soil : null);
+                }
+            }
             else if (Scribe.mode == LoadSaveMode.LoadingVars)
             {
                 ResetGrids();
+
                 for (var xmlNode = Scribe.loader.curXmlParent.FirstChild; xmlNode != null; xmlNode = xmlNode.NextSibling)
                 {
-                    var def = DefDatabase<TerrainLayerDef>.GetNamedSilentFail(xmlNode.Name.Replace("Deflate", ""));
-                    if (def is not null) ExposeTerrainGrid(grids[def], def.defName);
+                    var layer = int.Parse(xmlNode.Name.Replace("Layer", "").Replace("Deflate", ""));
+                    var layerGrid = new TerrainDef[map.cellIndices.NumGridCells];
+                    ExposeTerrainGrid(layerGrid, $"Layer{layer}", layer == 0 ? TerrainDefOf.Soil : null);
+                    for (var i = 0; i < layerGrid.Length; i++)
+                        if (layerGrid[i] is not null)
+                            grid[i].Place(layer, layerGrid[i]);
                 }
+
+                RecacheTop();
             }
+        }
+
+        public void ExposeDataBackCompat()
+        {
+            ResetGrids();
+
+            var topGrid = new TerrainDef[map.cellIndices.NumGridCells];
+            var underGrid = new TerrainDef[map.cellIndices.NumGridCells];
+            map.terrainGrid.ExposeTerrainGrid(topGrid, "topGrid", TerrainDefOf.Soil);
+            map.terrainGrid.ExposeTerrainGrid(underGrid, "underGrid", null);
+
+            for (var i = 0; i < underGrid.Length; i++)
+                if (underGrid[i] is not null)
+                    grid[i].Add(underGrid[i]);
+
+            for (var i = 0; i < topGrid.Length; i++)
+                if (topGrid[i] is not null)
+                    grid[i].Add(topGrid[i]);
 
             RecacheTop();
+        }
+
+        public void BeginBatch() => inBatch = true;
+
+        public void EndBatch()
+        {
+            inBatch = false;
+            foreach (var ind in batchModified) RecacheTop(ind);
+            batchModified.Clear();
         }
 
         public TerrainDef TerrainAt(int ind) => TopGrid[ind];
 
         public TerrainDef TerrainAt(IntVec3 c) => TopGrid[map.cellIndices.CellToIndex(c)];
-        public TerrainDef TerrainAtLayer(IntVec3 c, TerrainLayerDef layer) => grids[layer][map.cellIndices.CellToIndex(c)];
 
-        public TerrainDef UnderTerrainAt(int ind) => grids[TerrainLayerDefOf.Base][ind];
+        public TerrainDef UnderTerrainAt(int ind) => grid[ind][0];
 
-        public TerrainDef UnderTerrainAt(IntVec3 c) => grids[TerrainLayerDefOf.Base][map.cellIndices.CellToIndex(c)];
-        public IEnumerable<TerrainDef> TerrainsAt(int ind) => grids.OrderBy(kv => kv.Key.order).Select(kv => kv.Value[ind]).Where(v => v is not null);
-        public IEnumerable<TerrainDef> TerrainsAt(IntVec3 c) => TerrainsAt(map.cellIndices.CellToIndex(c));
+        public TerrainDef UnderTerrainAt(IntVec3 c) => grid[map.cellIndices.CellToIndex(c)][0];
+        public IEnumerable<TerrainDef> TerrainsAt(int ind) => grid[ind];
+        public List<TerrainDef> TerrainListAt(int ind) => grid[ind];
+        public List<TerrainDef> TerrainListAt(IntVec3 c) => grid[map.cellIndices.CellToIndex(c)];
+        public IEnumerable<TerrainDef> TerrainsAt(IntVec3 c) => grid[map.cellIndices.CellToIndex(c)];
 
         public void SetTerrain(IntVec3 c, TerrainDef newTerr)
         {
-            var layers = newTerr.GetModExtension<TerrainExtension>().layers;
+            if (newTerr is null)
+            {
+                Log.Error("Tried to set terrain at " + c + " to null.");
+                return;
+            }
+
+            if (Current.ProgramState == ProgramState.Playing) map.designationManager.DesignationAt(c, DesignationDefOf.SmoothFloor)?.Delete();
+
             var ind = map.cellIndices.CellToIndex(c);
-            foreach (var layer in layers) grids[layer][ind] = newTerr;
+            grid[ind].Add(newTerr);
             RecacheTop(ind);
             map.terrainGrid.DoTerrainChangedEffects(c);
         }
 
-        public string GetTerrainListString(IntVec3 c)
+        public void ReplaceTerrain(IntVec3 c, TerrainDef newTerr)
         {
-            return TerrainsAt(c).Select(terrain => terrain.LabelCap.Resolve()).Reverse().ToLineList();
+            RemoveTopLayer(c, false);
+            SetTerrain(c, newTerr);
         }
 
-        public TerrainDef FirstBlockingTerrain(IntVec3 c, TerrainDef newTerr)
+        public void ReplaceTerrain(IntVec3 c, TerrainDef oldTerr, TerrainDef newTerr)
         {
-            var layers = newTerr.GetModExtension<TerrainExtension>().layers;
             var ind = map.cellIndices.CellToIndex(c);
-            foreach (var layer in layers)
-                if (grids[layer][ind] is { } blocking)
-                    return blocking;
+            var list = grid[ind];
+            for (var i = 0; i < list.Count; i++)
+                if (list[i] == oldTerr)
+                {
+                    list[i] = newTerr;
+                    RecacheTop(ind);
+                    map.terrainGrid.DoTerrainChangedEffects(c);
+                    break;
+                }
+        }
 
-            return null;
+        public string GetTerrainListString(IntVec3 c)
+        {
+            return TerrainsAt(c).Reverse().Select(terrain => terrain.LabelCap.Resolve()).ToLineList();
+        }
+
+        public bool TryInsertTerrain(IntVec3 c, TerrainDef target, TerrainDef toInsert, int offset = 0)
+        {
+            var ind = map.cellIndices.CellToIndex(c);
+            var list = grid[ind];
+            var idx = list.IndexOf(target);
+            if (idx == -1) return false;
+            list.Place(idx + offset, toInsert);
+            RecacheTop(ind);
+            return true;
         }
 
         public void RemoveTerrain(IntVec3 c, TerrainDef toRemove, bool doLeavings = true)
         {
             var ind = map.cellIndices.CellToIndex(c);
+            if (toRemove == TopGrid[ind])
+            {
+                RemoveTopLayer(c, doLeavings);
+                return;
+            }
+
             if (doLeavings) GenLeaving.DoLeavingsFor(toRemove, c, map);
-
-            foreach (var grid in grids.Where(grid => grid.Value[ind] == toRemove))
-                grid.Value[ind] = null;
-
+            grid[ind].Remove(toRemove);
             RecacheTop(ind);
             map.terrainGrid.DoTerrainChangedEffects(c);
         }
 
         public void RemoveTopLayer(IntVec3 c, bool doLeavings = true)
         {
-            RemoveTerrain(c, TopGrid[map.cellIndices.CellToIndex(c)], doLeavings);
+            var ind = map.cellIndices.CellToIndex(c);
+            var list = grid[ind];
+            if (doLeavings) GenLeaving.DoLeavingsFor(TopGrid[ind], c, map);
+            list.RemoveAt(list.Count - 1);
+            grid[ind] = list;
+            RecacheTop(ind);
+            map.terrainGrid.DoTerrainChangedEffects(c);
         }
 
-        public bool CanRemoveTopLayerAt(IntVec3 c) => TopGrid[map.cellIndices.CellToIndex(c)].Removable;
+        public bool CanRemoveTopLayerAt(IntVec3 c) => TopGrid[map.cellIndices.CellToIndex(c)].Removable();
 
         private void ExposeTerrainGrid(TerrainDef[] grid, string label, TerrainDef fallbackTerrain = null)
         {
@@ -136,17 +216,30 @@ namespace TSO
 
         private void RecacheTop(int index)
         {
-            foreach (var pair in grids.OrderByDescending(kv => kv.Key.order))
-                if (pair.Value[index] is { } def)
-                {
-                    TopGrid[index] = def;
-                    break;
-                }
+            if (inBatch)
+            {
+                batchModified.Add(index);
+                return;
+            }
+
+            var list = grid[index];
+            if (list.Count == 0) return;
+            var top = list[list.Count - 1].Clone();
+            for (var i = 0; i < list.Count; i++)
+            {
+                var terrain = list[i];
+                if (terrain.bridge) top.bridge = true;
+                if (top.IsCarpet && i == list.Count - 2) top.pathCost = terrain.pathCost;
+            }
+
+            top.ClearCachedData();
+
+            TopGrid[index] = top;
         }
 
         public void ResetGrids()
         {
-            grids = DefDatabase<TerrainLayerDef>.AllDefs.ToDictionary(def => def, _ => new TerrainDef[map.cellIndices.NumGridCells]);
+            grid = Enumerable.Repeat(0, map.cellIndices.NumGridCells).Select(_ => new List<TerrainDef>()).ToArray();
             RecacheTop();
         }
     }

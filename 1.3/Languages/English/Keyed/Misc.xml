@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LanguageData>
+    <TSO.Type>Type</TSO.Type>
+    <TSO.Mode>Terrain place mode:</TSO.Mode>
+    <TSO.Mode.OnTop>On top</TSO.Mode.OnTop>
+    <TSO.Mode.Replace>Replace</TSO.Mode.Replace>
+    <TSO.Mode.Toggle>Set place mode</TSO.Mode.Toggle>
+    <TSO.CannotRemove>Cannot remove {0}.</TSO.CannotRemove>
+    <TSO.CannotReplace.Bottom>Cannot replace bottom type.</TSO.CannotReplace.Bottom>
+    <TSO.Mode.None>Cannot find valid mode.</TSO.Mode.None>
+    <TSO.CannotPlace.SoilOnWater>Cannot place {0} on water.</TSO.CannotPlace.SoilOnWater>
+</LanguageData>

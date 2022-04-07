@@ -2,6 +2,7 @@
 using HarmonyLib;
 using RimWorld;
 using Verse;
+using Verse.AI;
 
 namespace TSO
 {
@@ -24,11 +25,22 @@ namespace TSO
                 harm.Patch(AccessTools.Method(AccessTools.TypeByName("VFEArchitect.SectionLayer_CustomBridgeProps"), "Regenerate"), transpiler:
                     new HarmonyMethod(GetType(), nameof(ShouldDrawPropsBelow)));
             }
+
+            if (ModLister.HasActiveModWithName("Soil Relocation Framework"))
+            {
+                Log.Message("[TSO] Activating compatibility patch for: Soil Relocation Framework");
+                harm.Patch(AccessTools.Method(AccessTools.TypeByName("SR.JobDriver_Dig"), "DoEffect"), postfix: new HarmonyMethod(GetType(), nameof(SetHasRemoved)));
+            }
         }
 
         public static IEnumerable<CodeInstruction> ShouldDrawPropsBelow(IEnumerable<CodeInstruction> instructions) =>
             instructions.MethodReplacer(AccessTools.Method(typeof(TerrainGrid), nameof(TerrainGrid.TerrainAt), new[] {typeof(IntVec3)}),
-                AccessTools.Method(typeof(Utils), nameof(Utils.GetBridge)));
+                AccessTools.Method(typeof(Utils), nameof(Utils.GetBridgeNoNull)));
+
+        public static void SetHasRemoved(JobDriver __instance, IntVec3 c)
+        {
+            if (c.GetFirstThing<Blueprint_BuildTerrain>(__instance.Map) is {Mode: TerrainPlaceMode.Replace, HasRemovedBelow: false} bt) bt.HasRemovedBelow = true;
+        }
     }
 
     [StaticConstructorOnStartup]

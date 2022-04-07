@@ -13,7 +13,7 @@ namespace TSO
         public static Harmony Harm;
 
         public static Dictionary<Map, AdvancedTerrainGrid> Grids = new();
-        public static ConditionalWeakTable<Job, TerrainDef> ToRemove = new();
+        public static ConditionalWeakTable<Job, ExtendedJobInfo> JobInfo = new();
         private static readonly List<PatchSet> PATCHES = new();
 
         public TSOMod(ModContentPack content) : base(content)
@@ -21,14 +21,22 @@ namespace TSO
             Harm = new Harmony("legoduded17.tso");
             foreach (var type in typeof(PatchSet).AllSubclassesNonAbstract()) PATCHES.Add((PatchSet) Activator.CreateInstance(type, Harm));
         }
+
+        public static void SetToRemove(Job job, TerrainDef toRemove)
+        {
+            if (JobInfo.TryGetValue(job, out var info)) info.ToRemove = toRemove;
+            else JobInfo.Add(job, new ExtendedJobInfo {ToRemove = toRemove});
+        }
     }
 
+    public class ExtendedJobInfo
+    {
+        public TerrainDef ToRemove;
+    }
 
     // ReSharper disable InconsistentNaming
-    public class TerrainLayerDef : Def
+    public class TerrainTypeDef : Def
     {
-        public int order;
-
         public override IEnumerable<string> ConfigErrors()
         {
             label ??= defName.ToLower();
@@ -39,26 +47,25 @@ namespace TSO
 
     public class TerrainExtension : DefModExtension
     {
-        public List<TerrainLayerDef> layers;
+        public TerrainTypeDef type;
 
         public override IEnumerable<string> ConfigErrors()
         {
-            if (layers.NullOrEmpty()) yield return "Must specify at least one layer";
-            else if (layers.Any(layer => layer is null)) yield return "Must not have any null layers";
+            if (type is null) yield return "Must not have null type";
         }
     }
 
     [DefOf]
-    public static class TerrainLayerDefOf
+    public static class TerrainTypeDefOf
     {
-        public static TerrainLayerDef Base;
-        public static TerrainLayerDef Bridge;
-        public static TerrainLayerDef Floor;
-        public static TerrainLayerDef Carpet;
+        public static TerrainTypeDef Base;
+        public static TerrainTypeDef Bridge;
+        public static TerrainTypeDef Floor;
+        public static TerrainTypeDef Carpet;
 
-        static TerrainLayerDefOf()
+        static TerrainTypeDefOf()
         {
-            DefOfHelper.EnsureInitializedInCtor(typeof(TerrainLayerDefOf));
+            DefOfHelper.EnsureInitializedInCtor(typeof(TerrainTypeDefOf));
         }
     }
 
